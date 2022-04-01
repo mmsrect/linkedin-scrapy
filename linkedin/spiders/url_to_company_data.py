@@ -1,3 +1,4 @@
+import os
 import re
 import json
 import scrapy
@@ -25,6 +26,8 @@ class UrlToCompanyDataSpider(scrapy.Spider):
 
     # get cookies from 1-input/cookies.txt
     rawcookies = open('input/cookies.txt').read().strip()
+    if rawcookies == "enter_your_cookies_here":
+        rawcookies = os.environ['cookies']
     if not rawcookies.endswith(';'): rawcookies+=';'
 
     try:

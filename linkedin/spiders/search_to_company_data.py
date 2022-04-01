@@ -1,3 +1,4 @@
+import os
 import re
 import math
 import scrapy
@@ -58,6 +59,8 @@ class SearchToCompanyDataSpider(scrapy.Spider):
 
     # get cookies from 1-input/cookies.txt
     rawcookies = open('input/cookies.txt').read().strip()
+    if rawcookies == "enter_your_cookies_here":
+        rawcookies = os.environ['cookies']
     if not rawcookies.endswith(';'): rawcookies+=';'
 
     try:
