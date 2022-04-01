@@ -5,9 +5,10 @@
 
 
 # useful for handling different item types with a single interface
-from itemadapter import ItemAdapter
-from os.path import exists
 import csv
+import logging
+from os.path import exists
+from itemadapter import ItemAdapter
 
 
 class LinkedinPipeline:
@@ -29,4 +30,5 @@ class LinkedinPipeline:
         with open(self.filename, 'a', encoding='UTF8') as f:
             writer = csv.writer(f)
             writer.writerow(datarow_raw)
+        logging.info(item)
         return item
