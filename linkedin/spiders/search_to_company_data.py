@@ -52,8 +52,6 @@ def get_api_url(url, start=0, count=25):
 
 
 
-
-
 class SearchToCompanyDataSpider(scrapy.Spider):
     name = 'search_to_company_data'
     allowed_domains = ['linkedin.com']
@@ -66,12 +64,13 @@ class SearchToCompanyDataSpider(scrapy.Spider):
             rawcookies = os.environ['cookies']
         cookies = json.loads(rawcookies)
         li_at = [c['value'] for c in cookies if c['name']=='li_at'][0]
-        # li_a = [c['value'] for c in cookies if c['name']=='li_a'][0]
+        li_a = [c['value'] for c in cookies if c['name']=='li_a'][0]
         jsessionid = [[c['value'] for c in cookies if c['name']=='JSESSIONID'][0].replace('"','')]
-        cookies = {'li_at':li_at, 'JSESSIONID':f'"{jsessionid[0]}"'}
+        cookies = {'li_at':li_at, 'li_a':li_a, 'JSESSIONID':f'"{jsessionid[0]}"'}
         headers = {
-            'csrf-token': jsessionid[0],
-            'x-restli-protocol-version': '2.0.0'
+            'Csrf-Token': jsessionid[0],
+            'x-restli-protocol-version': '2.0.0',
+            # 'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36'
             }
     except Exception as e:
         cookies = None
@@ -80,11 +79,14 @@ class SearchToCompanyDataSpider(scrapy.Spider):
 
     def start_requests(self):
         for url in self.start_urls:
+            referer = url
+            headers = self.headers
+            headers['referer'] = referer
             url = get_api_url(url)
             logging.info(f"Visiting: {url}")
             request = scrapy.Request(
                 url = url,
-                headers=self.headers,
+                headers=headers,
                 cookies=self.cookies,
                 callback=self.parse_api_url
             )
