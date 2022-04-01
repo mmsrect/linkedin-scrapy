@@ -65,11 +65,11 @@ class SearchToCompanyDataSpider(scrapy.Spider):
             rawcookies = os.environ['cookies']
         cookies = json.loads(rawcookies)
         li_at = [c['value'] for c in cookies if c['name']=='li_at'][0]
-        li_a = [c['value'] for c in cookies if c['name']=='li_a'][0]
+        # li_a = [c['value'] for c in cookies if c['name']=='li_a'][0]
         jsessionid = [[c['value'] for c in cookies if c['name']=='JSESSIONID'][0].replace('"','')]
-        cookies = {'li_at':li_at, 'li_a':li_a, 'JSESSIONID':f'"{jsessionid[1]}"'}
+        cookies = {'li_at':li_at, 'JSESSIONID':f'"{jsessionid[0]}"'}
         headers = {
-            'csrf-token': jsessionid[1],
+            'csrf-token': jsessionid[0],
             'x-restli-protocol-version': '2.0.0'
             }
     except Exception as e:

@@ -20,7 +20,7 @@ https://chrome.google.com/webstore/detail/copy-cookies/jcbpglbplpblnagieibnemmki
 ## Usage:
 1. Enter urls to scrape in input > input-urls.txt
 2. Enter cookies in input > cookies.txt
-    1. Here is a video on how to copy cookies using the Chrome extension - https://watch.screencastify.com/v/Rwz9OxI77C7w9W7ir19D
+    1. Here is a video on how to copy cookies using the Chrome extension - https://watch.screencastify.com/v/MtDq2ho6SQzZru5812cw
 3. ***On Windows***: double click - `run.py` file to start the scraper.
 4. ***On Mac***: Open Terminal > Type `python run.py` and hit enter
 5. Output will be saved in the `Output` folder
