@@ -10,7 +10,8 @@ from urllib.parse import urlencode
 from ..items import LinkedinItem
 
 # convert search_url to api_url
-def get_api_url(url, start=0, count=100):
+def get_api_url(url, start=0, count=25):
+    logging.info(f"Generating API url for: {url}")
     parsed_url = urlparse(url)
     query = parse_qs(parsed_url.query)['query'][0]
 
@@ -29,7 +30,7 @@ def get_api_url(url, start=0, count=100):
     # so simply replace start and return
     if 'start' in parse_qs(parsed_url.query):
         start = parse_qs(parsed_url.query)['start'][0]
-        start = int(start)+100
+        start = int(start)+count
         url = re.sub(r'start\=(\d+)',f'start={start}',url)
         return url
 
@@ -58,15 +59,14 @@ class SearchToCompanyDataSpider(scrapy.Spider):
     start_urls = [c.strip() for c in open('input/input-urls.txt').readlines()]
 
     # get cookies from 1-input/cookies.txt
-    rawcookies = open('input/cookies.txt').read().strip()
-    if rawcookies == "enter_your_cookies_here":
-        rawcookies = os.environ['cookies']
-    if not rawcookies.endswith(';'): rawcookies+=';'
-
     try:
-        li_at = re.findall('(li\_at\=)(.+?)(\;\ )',rawcookies)[0][1]
-        li_a = re.findall('(li\_a\=)(.+?)(\;\ ?)',rawcookies)[0][1]
-        jsessionid = re.findall('(JSESSIONID\=\")(ajax\:\d+)(\")',rawcookies)[0]
+        rawcookies = open('input/cookies.txt').read().strip()
+        if rawcookies == "enter_your_cookies_here":
+            rawcookies = os.environ['cookies']
+        cookies = json.loads(rawcookies)
+        li_at = [c['value'] for c in cookies if c['name']=='li_at'][0]
+        li_a = [c['value'] for c in cookies if c['name']=='li_a'][0]
+        jsessionid = [[c['value'] for c in cookies if c['name']=='JSESSIONID'][0].replace('"','')]
         cookies = {'li_at':li_at, 'li_a':li_a, 'JSESSIONID':f'"{jsessionid[1]}"'}
         headers = {
             'csrf-token': jsessionid[1],
@@ -74,11 +74,13 @@ class SearchToCompanyDataSpider(scrapy.Spider):
             }
     except Exception as e:
         cookies = None
+        logging.error("Error in loading cookies. Please copy cookies using the chrome extension")
         logging.error(e, exc_info=True)
 
     def start_requests(self):
         for url in self.start_urls:
             url = get_api_url(url)
+            logging.info(f"Visiting: {url}")
             request = scrapy.Request(
                 url = url,
                 headers=self.headers,
@@ -99,13 +101,14 @@ class SearchToCompanyDataSpider(scrapy.Spider):
             
             item = LinkedinItem()
             item['old_linkedin_url'] = old_linkedin_url
+            logging.info(f"Storing: {item}")
             yield item
         
         # next page
         total_results = paging['total']
-        max_start = math.ceil(total_results/100)*100
+        max_start = math.ceil(total_results/25)*25
         max_start = min(max_start,1000)
-        start = paging['start'] + 100
+        start = paging['start'] + 25
         if start < max_start:
             # the function below will always add 100 to start, if start!=0, hence call it only if start<max_start
             apiurl = get_api_url(response.url) # convert standard url to api url

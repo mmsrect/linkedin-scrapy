@@ -22,7 +22,7 @@ class LinkedinPipeline:
                     writer = csv.writer(f)
                     writer.writerow(header)
         else:
-            self.filename = 'linkedin-urls.csv'
+            self.filename = 'output/linkedin-urls.csv'
         
     def process_item(self, item, spider):
         datarow_raw = [item[key] for key in item]

@@ -25,29 +25,30 @@ class UrlToCompanyDataSpider(scrapy.Spider):
     start_urls = [c.strip() for c in open('input/input-urls.txt').readlines()] # get urls from input file
 
     # get cookies from 1-input/cookies.txt
-    rawcookies = open('input/cookies.txt').read().strip()
-    if rawcookies == "enter_your_cookies_here":
-        rawcookies = os.environ['cookies']
-    if not rawcookies.endswith(';'): rawcookies+=';'
-
     try:
-        li_at = re.findall('(li\_at\=)(.+?)(\;\ )',rawcookies)[0][1]
-        # li_a = re.findall('(li\_a\=)(.+?)(\;\ ?)',rawcookies)[0][1]
-        jsessionid = re.findall('(JSESSIONID\=\")(ajax\:\d+)(\")',rawcookies)[0]
-        cookies = {'li_at':li_at, 'JSESSIONID':f'"{jsessionid[1]}"'}
+        rawcookies = open('input/cookies.txt').read().strip()
+        if rawcookies == "enter_your_cookies_here":
+            rawcookies = os.environ['cookies']
+        cookies = json.loads(rawcookies)
+        li_at = [c['value'] for c in cookies if c['name']=='li_at'][0]
+        li_a = [c['value'] for c in cookies if c['name']=='li_a'][0]
+        jsessionid = [[c['value'] for c in cookies if c['name']=='JSESSIONID'][0].replace('"','')]
+        cookies = {'li_at':li_at, 'li_a':li_a, 'JSESSIONID':f'"{jsessionid[1]}"'}
         headers = {
             'csrf-token': jsessionid[1],
             'x-restli-protocol-version': '2.0.0'
             }
     except Exception as e:
         cookies = None
+        logging.error("Error in loading cookies. Please copy cookies using the chrome extension")
         logging.error(e, exc_info=True)
 
     def start_requests(self):
         for url in self.start_urls:
+            logging.info(f"Visiting page: {url}")
             request = scrapy.Request(
                 url = url,
-                cookies = {'li_at': self.li_at},
+                cookies = self.cookies,
                 callback = self.call_api_url
             )
             yield request
@@ -66,10 +67,12 @@ class UrlToCompanyDataSpider(scrapy.Spider):
         if not codes_in_json:
             logging.error("Couldn't decode the json object sent by LinkedIn")
             return
-
+        
         code = codes_in_json[0]
 
         url = "https://www.linkedin.com" + code['request']
+        
+        logging.info(f"Found API url: {url}")
         
         # 'x-li-uuid' from response to headers along with csrf obtained from cookies
         headers = code['headers']
@@ -83,6 +86,7 @@ class UrlToCompanyDataSpider(scrapy.Spider):
             return
         
 
+        logging.info(f"Visiting API url: {url}")
         request = scrapy.Request(
             url = url, 
             headers = headers,
@@ -98,11 +102,11 @@ class UrlToCompanyDataSpider(scrapy.Spider):
 
   
     def parse(self, response):
-
+        
         elements = response.json()['elements'][0]
 
         # parse linkedin urls
-        old_linkedin_url = response.meta['url']
+        old_linkedin_url = response.meta.get('url')
         new_linkedin_url = elements.get('url')
         company_website = elements.get('companyPageUrl')
         if not company_website:
